@@ -168,7 +168,7 @@ struct MOKP {
         nondominated_set[i] = Solution("z" + std::to_string(i), 0, 0, coordinates, std::vector<RefPoint>());
       }
     }
-    std::cout << "MOKP instance loaded successfully!" << std::endl;
+    std::cerr << "MOKP instance loaded successfully!" << std::endl;
     return MOKP(N, M, W, weights, values, items, nondominated_set);
   }
 

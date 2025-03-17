@@ -26,7 +26,7 @@ void compare_algorithms(MOKP& problem, const int32_t K, const int32_t J, const d
 }
 
 int main(int argc, char* argv[]) {
-  CLI::App app{"Hypervolume Polychotomic Scheme for MOCO"};
+  CLI::App app{"Greedy Hypervolume Polychotomic Scheme for MOCO"};
 
   std::string instance_path;
   int32_t K, J;
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
       ->default_val(false);
 
   app.add_option("--bb", bb, "Use the branch-and-bound algorithm")
-      ->default_val(true);
+      ->default_val(false);
 
   app.add_option("--greedy", greedy, "Use the greedy algorithm")
       ->default_val(false);
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 
   CLI11_PARSE(app, argc, argv);
 
-  std::cerr << "MOCO-HPS" << std::endl;
+  std::cerr << "Greedy-HPS-MOCO" << std::endl;
   std::cerr << "- Input file: " << instance_path << std::endl;
   std::cerr << "- K: " << K << std::endl;
   std::cerr << "- J: " << J << std::endl;
@@ -81,10 +81,9 @@ int main(int argc, char* argv[]) {
 
   MOKP problem = MOKP::from_stream(std::ifstream(instance_path));
 
-  if (bb) {
-    // Solve the problem using the branch-and-bound algorithm
-    std::vector<Statistics> stats_J = HPS_BB(problem, K, J, time_limit);
-    Statistics stats = stats_J.back();
+  if (ilp) {
+    // Solve the problem using the ILP algorithm
+    Statistics stats = HPS_ILP(problem, K, J);
     std::cout << stats.to_string(detailed_output) << std::endl;
   } else if (greedy) {
     // Solve the problem using the greedy algorithm
@@ -93,14 +92,17 @@ int main(int argc, char* argv[]) {
     }
     Statistics stats = HPS_SIM(problem, J);
     std::cout << stats.to_string(detailed_output) << std::endl;
-  } else {
-    // Solve the problem using the ILP algorithm
-    Statistics stats = HPS_ILP(problem, K, J);
+  } else if (bb) {
+    // Solve the problem using the branch-and-bound algorithm
+    std::vector<Statistics> stats_J = HPS_BB(problem, K, J, time_limit);
+    Statistics stats = stats_J.back();
     std::cout << stats.to_string(detailed_output) << std::endl;
+  } else {
+    std::cout << "No algorithm selected. Please select one of the following: --ilp, --bb, --greedy" << std::endl;
   }
 
   return 0;
 }
 
 // Test the application with the following command:
-// ./moco-hps --input-file={path} --J=10 --K=2
+// ./greedy-hps-moco --input-file={instance_path} --J=10 --K=2 --bb=true --detailed-output=true
