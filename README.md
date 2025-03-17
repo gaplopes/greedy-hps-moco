@@ -1,13 +1,13 @@
-# moco-hps
+# greedy-hps-moco
 
-A Greedy Hypervolume Polychotomic Scheme for Multiobjective Combinatorial Optimization for the Multiobjective Knapsack Problem.
+A Greedy Hypervolume Polychotomic Scheme for Multiobjective Combinatorial Optimization (Greedy-HPS-MOCO).
 
 ## Introduction
 
-MOCO-HPS is an approach to solve Multiobjective Combinatorial Optimization (MOCO) problems.
+Greedy-HPS-MOCO is an approach to solve Multiobjective Combinatorial Optimization (MOCO) problems.
 It introduces a generic greedy method to compute representations of the nondominated set that approximately maximizes the dominated hypervolume.
 
-In particular, MOCO-HPS is designed to solve the Multiobjective Knapsack Problem (MOKP), maximizing the hypervolume dominated by a 
+In particular, the Greedy-HPS-MOCO is designed to solve the Multiobjective Knapsack Problem (MOKP), maximizing the hypervolume dominated by a 
 subset of nondominated solutions of size J with respect to K reference points.
 
 ## Key Features
@@ -37,12 +37,12 @@ This implementation focuses on:
 
 ## Building
 
-To build the MOCO-HPS solver, follow these steps:
+To build the Greedy-HPS-MOCO solver, follow these steps:
 
 ```bash
 # Clone the repository
 git clone
-cd moco-hps
+cd greedy-hps-moco
 mkdir build
 cd build
 cmake ..
@@ -51,11 +51,11 @@ cmake --build .
 
 ## Usage
 
-Basic usage of the MOCO-HPS solver is as follows:
+Basic usage of the Greedy-HPS-MOCO solver is as follows:
 
 ```bash
 # Solve a 3-objective knapsack problem with 10 items, using 2 reference points
-./moco-hps --input-file={instance_path} --J=10 --K=2
+./greedy-hps-moco --input-file={instance_path} --J=10 --K=2 --bb=true --detailed-output=true
 ```
 
 Key parameters include:
@@ -87,7 +87,7 @@ The instances considered for the experiments are available in a repository at [h
 
 ## Output Information
 
-MOCO-HPS provides comprehensive statistics about the solution process and quality of results.
+Greedy-HPS-MOCO provides comprehensive statistics about the solution process and quality of results.
 The output includes performance metrics, solution coordinates, and hypervolume calculations.
 
 ### Solution Details
@@ -157,14 +157,6 @@ HV ratio (Nadir): 0.896
 The solver supports two output formats:
 - **Detailed**: Human-readable format with labels and newlines (use `--detailed-output` flag)
 - **Compact**: Space-separated values suitable for parsing by analysis scripts (default)
-
-## Citation
-
-If you use this code in your research, please cite the following paper:
-
-```
-[Citation information to be added upon publication]
-```
 
 ## License
 
