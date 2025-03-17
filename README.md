@@ -10,6 +10,15 @@ It introduces a generic greedy method to compute representations of the nondomin
 In particular, the Greedy-HPS-MOCO is designed to solve the Multiobjective Knapsack Problem (MOKP), maximizing the hypervolume dominated by a 
 subset of nondominated solutions of size J with respect to K reference points.
 
+There are three solver variants available:
+
+1. **Greedy**: The main solver that uses a greedy algorithm to find a representation set. In this case, the non-dominated set is required to be known.
+2. **ILP**: An alternative solver that uses a mixed-integer programming formulation for hypervolume scalarization.
+3. **BB**: A specialized branch-and-bound solver for m-objective knapsack problems.
+
+In both the ILP and BB solvers, the non-dominated set is not required to be known, and the algorithm will compute it during the solution process.
+Moreover, for both solvers, it is necessary to provide the number of reference points K to be used in the hypervolume scalarization.
+
 ## Key Features
 
 - Hypervolume Scalarization: Iteratively builds a representation by solving a sequence of hypervolume scalarized problems
