@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(moco-hps)
+project(greedy-hps-moco)
 
 # Set the C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -89,13 +89,13 @@ include_directories(${CMAKE_SOURCE_DIR}/others)
 include_directories(${CMAKE_SOURCE_DIR}/mokp)
 
 # Add the executable and specify the source files
-add_executable(moco-hps
+add_executable(greedy-hps-moco
   ${CMAKE_SOURCE_DIR}/apps/main.cpp
   # Add other source files if necessary
 )
 
 # Link the executable with the libraries
-target_link_libraries(moco-hps
+target_link_libraries(greedy-hps-moco
   PRIVATE
     mooutils::mooutils
     CLI11::CLI11
@@ -103,10 +103,10 @@ target_link_libraries(moco-hps
 )
 
 # Set compile options
-target_compile_options(moco-hps PRIVATE ${MOBKP_CXX_WARN_FLAGS})
+target_compile_options(greedy-hps-moco PRIVATE ${MOBKP_CXX_WARN_FLAGS})
 
 # Set the output name of the executable
-set_target_properties(moco-hps PROPERTIES OUTPUT_NAME moco-hps)
+set_target_properties(greedy-hps-moco PROPERTIES OUTPUT_NAME greedy-hps-moco)
 
 # Install the target
-install(TARGETS moco-hps)
+install(TARGETS greedy-hps-moco)
