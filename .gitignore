@@ -1,5 +1,6 @@
 .vscode/
 build/
+/CMakeFiles/
 results/
-mokp/instances/
 others/
+ignore/

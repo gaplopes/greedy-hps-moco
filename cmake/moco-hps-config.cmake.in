@@ -1,0 +1,11 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(mooutils CONFIG)
+find_dependency(OpenMP COMPONENTS CXX)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
+find_dependency(GUROBI 12.0 MODULE)
+list(REMOVE_ITEM CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
+
+include("${CMAKE_CURRENT_LIST_DIR}/moco-hps-targets.cmake")
+check_required_components(moco-hps)

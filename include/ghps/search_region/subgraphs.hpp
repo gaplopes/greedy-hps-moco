@@ -5,12 +5,17 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
-#include <rwd.hpp>
+#include <ghps/search_region/rwd.hpp>
+#include <ghps/core/types.hpp>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
-#include <utils.hpp>
+
 #include <vector>
+
+namespace moco::ghps {
+
 
 class Node {
  public:
@@ -45,16 +50,21 @@ class Subgraphs {
   Subgraphs() = default;
 
   // Get subgraphs from reference points
-  static std::vector<std::vector<int32_t>> get_subgraphs(const std::vector<RefPoint>& local_bounds, int k, int time_limit = 120, bool validate = false) {
+  static std::vector<std::vector<int32_t>> get_subgraphs(const std::vector<RefPoint>& local_bounds, int k, double time_limit = 120, bool validate = false) {
+    return get_subgraphs(local_bounds, k, Timer(time_limit), validate);
+  }
+
+  static std::vector<std::vector<int32_t>> get_subgraphs(const std::vector<RefPoint>& local_bounds, int k, const Timer& deadline, bool validate = false) {
+    deadline.check();
     if (validate && k > 1) {
-      auto subsets_python = get_subgraph_enucon(local_bounds, k, 120);
-      auto subsets_cpp = get_subgraphs_rwd(local_bounds, k, 120);
+      auto subsets_python = get_subgraph_enucon(local_bounds, k, static_cast<int>(std::min(deadline.left(), double(std::numeric_limits<int>::max()))));
+      auto subsets_cpp = get_subgraphs_rwd(local_bounds, k, deadline);
       if (subsets_python.size() != subsets_cpp.size()) {
         std::cout << "Error: The number of subsets is different in the Python and C++ implementations" << std::endl;
         std::cout << "Python: " << subsets_python.size() << std::endl;
         std::cout << "C++: " << subsets_cpp.size() << std::endl;
         std::cout << "Local bounds: " << local_bounds.size() << std::endl;
-        exit(1);
+        throw std::runtime_error("Subgraph validation failed: Python=" + std::to_string(subsets_python.size()) + " C++=" + std::to_string(subsets_cpp.size()));
       }
       // Sort the subsets
       for (auto& subset : subsets_python) {
@@ -67,10 +77,25 @@ class Subgraphs {
       std::sort(subsets_cpp.begin(), subsets_cpp.end());
       if (subsets_python != subsets_cpp) {
         std::cout << "Error: The subsets are different in the Python and C++ implementations" << std::endl;
-        exit(1);
+        throw std::runtime_error("Subgraph validation failed: subsets differ between Python and C++ implementations");
       }
     }
-    return get_subgraphs_rwd(local_bounds, k, time_limit);
+    return get_subgraphs_rwd(local_bounds, k, deadline);
+  }
+
+  static std::vector<std::vector<int32_t>> get_subgraphs(int32_t vertices,
+      const std::vector<std::pair<int32_t, int32_t>>& edges, int k, const Timer& deadline) {
+    deadline.check();
+    if (k <= 0 || k > vertices) return {};
+    if (k == 1) {
+      std::vector<std::vector<int32_t>> subsets;
+      for (int32_t i = 0; i < vertices; ++i) {
+        deadline.check();
+        subsets.push_back({i});
+      }
+      return subsets;
+    }
+    return rwd(vertices, edges.size(), edges, k, deadline);
   }
 
  private:
@@ -78,21 +103,15 @@ class Subgraphs {
   static bool are_neighbors(const Node& u, const Node& v) {
     assert(u.defining_points.size() == v.defining_points.size());
     size_t p = u.defining_points.size();
-    std::set<size_t> indices;
+    size_t first = p, second = p;
     for (size_t i = 0; i < p; ++i) {
-      indices.insert(i);
+      if (u.defining_points[i] == v.defining_points[i]) continue;
+      if (first == p) first = i;
+      else if (second == p) second = i;
+      else return false;
     }
-    for (size_t i = 0; i < p; ++i) {
-      if (u.defining_points[i] == v.defining_points[i]) {
-        indices.erase(i);
-      }
-    }
-    if (indices.size() != 2) {
-      return false;
-    }
-    size_t j = *indices.begin();
-    size_t k = *indices.rbegin();
-    return (u.defining_points[j] == v.defining_points[k]) || (u.defining_points[k] == v.defining_points[j]);
+    return second != p && ((u.defining_points[first] == v.defining_points[second])
+        || (u.defining_points[second] == v.defining_points[first]));
   }
 
   // Get neighbors of a node
@@ -125,15 +144,19 @@ class Subgraphs {
     print_nodes(nodes);
   }
 
-  // Get graph edges
-  static std::vector<std::pair<int32_t, int32_t>> get_graph_edges(const std::vector<RefPoint>& ref_points) {
+ public:
+  // Get graph edges once for reuse across subset sizes.
+  static std::vector<std::pair<int32_t, int32_t>> get_graph_edges(const std::vector<RefPoint>& ref_points, const Timer& deadline = Timer()) {
+    deadline.check();
     std::vector<Node> nodes;
     for (const auto& ref : ref_points) {
+      deadline.check();
       nodes.emplace_back(ref.id, ref.defining_points);
     }
     std::vector<std::pair<int32_t, int32_t>> edges;
     for (size_t i = 0; i < nodes.size(); ++i) {
       for (size_t j = i + 1; j < nodes.size(); ++j) {
+        deadline.check();
         if (are_neighbors(nodes[i], nodes[j])) {
           edges.emplace_back(i, j);
         }
@@ -142,6 +165,7 @@ class Subgraphs {
     return edges;
   }
 
+ private:
   // Create graph file
   static void create_graph_file(const std::vector<RefPoint>& ref_points, const std::string& filename) {
     std::ofstream file(filename);
@@ -197,22 +221,24 @@ class Subgraphs {
   }
 
   // Get subgraphs from reference points
-  static std::vector<std::vector<int32_t>> get_subgraphs_rwd(const std::vector<RefPoint>& local_bounds, const int k, const int time_limit) {
+  static std::vector<std::vector<int32_t>> get_subgraphs_rwd(const std::vector<RefPoint>& local_bounds, const int k, const Timer& deadline) {
+    deadline.check();
     if (local_bounds.size() == 0) {
       return {};
     }
     if (k == 1) {
       std::vector<std::vector<int32_t>> subgraphs;
       for (size_t i = 0; i < local_bounds.size(); ++i) {
+        deadline.check();
         subgraphs.push_back({static_cast<int32_t>(i)});
       }
       return subgraphs;
     }
-    auto edges = get_graph_edges(local_bounds);
-    auto V = (int)local_bounds.size();
-    auto E = (int)edges.size();
-    return rwd(V, E, edges, k, time_limit);
+    auto edges = get_graph_edges(local_bounds, deadline);
+    return get_subgraphs(local_bounds.size(), edges, k, deadline);
   }
 };
+
+} // namespace moco::ghps
 
 #endif  // SUBGRAPHS_HPP
